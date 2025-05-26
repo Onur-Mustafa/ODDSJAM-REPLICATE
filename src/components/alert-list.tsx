@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Edit3, BellRing, ListChecks } from 'lucide-react';
+import { decimalToAmerican } from '@/lib/utils';
 
 interface AlertListProps {
   alerts: AlertConfig[];
@@ -44,7 +45,7 @@ export function AlertList({ alerts, onDeleteAlert, onEditAlert }: AlertListProps
                 <h3 className="font-semibold text-lg">{alert.eventName}</h3>
                 <p className="text-sm text-muted-foreground">{alert.sport} - {alert.outcomeName}</p>
                 <Badge variant="outline" className="mt-1">
-                  Notify if odds {alert.operator === '>=' ? '≥' : '≤'} {alert.targetOdds.toFixed(2)}
+                  Notify if odds {alert.operator === '>=' ? '≥' : '≤'} {decimalToAmerican(alert.targetOdds)}
                 </Badge>
               </div>
               <div className="flex gap-2 flex-shrink-0 self-end sm:self-center">

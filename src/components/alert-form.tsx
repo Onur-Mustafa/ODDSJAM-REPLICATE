@@ -12,14 +12,25 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import type { AlertConfig } from '@/types';
-import { MOCK_EVENTS, MOCK_SPORTS } from '@/data/mock-data'; // Assuming MOCK_OUTCOMES is part of MOCK_EVENTS
+import { MOCK_EVENTS, MOCK_SPORTS } from '@/data/mock-data';
 import { BellPlus, Loader2 } from 'lucide-react';
+import { americanToDecimal, decimalToAmerican } from '@/lib/utils';
 
 const alertFormSchema = z.object({
   sportId: z.string().min(1, "Sport is required"),
   eventId: z.string().min(1, "Event is required"),
   outcomeName: z.string().min(1, "Outcome is required"),
-  targetOdds: z.coerce.number().min(1.01, "Target odds must be at least 1.01"),
+  targetOdds: z.string()
+    .min(1, "Target odds are required.")
+    .refine(
+      (val) => {
+        const decimalVal = americanToDecimal(val);
+        return decimalVal !== null && decimalVal >= 1.01;
+      },
+      {
+        message: "Invalid American odds. Use format like '+150' or '-200'. Odds must be equivalent to decimal 1.01 or higher.",
+      }
+    ),
   operator: z.enum(['>=', '<=']),
 });
 
@@ -40,13 +51,13 @@ export function AlertForm({ onAddAlert, existingAlert }: AlertFormProps) {
       sportId: MOCK_SPORTS.find(s => s.name === existingAlert.sport)?.id || '',
       eventId: existingAlert.eventId,
       outcomeName: existingAlert.outcomeName,
-      targetOdds: existingAlert.targetOdds,
+      targetOdds: decimalToAmerican(existingAlert.targetOdds),
       operator: existingAlert.operator,
     } : {
       sportId: '',
       eventId: '',
       outcomeName: '',
-      targetOdds: 1.5,
+      targetOdds: '+100', // Default to +100 American Odds
       operator: '>=',
     },
   });
@@ -67,13 +78,11 @@ export function AlertForm({ onAddAlert, existingAlert }: AlertFormProps) {
     return event ? event.outcomes : [];
   }, [selectedEventId]);
   
-  // Reset event and outcome if sport changes
   React.useEffect(() => {
     form.setValue('eventId', '');
     form.setValue('outcomeName', '');
   }, [selectedSportId, form]);
 
-  // Reset outcome if event changes
   React.useEffect(() => {
     form.setValue('outcomeName', '');
   }, [selectedEventId, form]);
@@ -81,8 +90,15 @@ export function AlertForm({ onAddAlert, existingAlert }: AlertFormProps) {
 
   const onSubmit: SubmitHandler<AlertFormValues> = async (data) => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const decimalTargetOdds = americanToDecimal(data.targetOdds);
+    if (decimalTargetOdds === null) {
+      toast({ title: "Error", description: "Invalid target odds format.", variant: "destructive" });
+      setIsLoading(false);
+      return;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
 
     const event = MOCK_EVENTS.find(e => e.id === data.eventId);
     const sport = MOCK_SPORTS.find(s => s.id === data.sportId);
@@ -99,13 +115,21 @@ export function AlertForm({ onAddAlert, existingAlert }: AlertFormProps) {
       eventName: event.name,
       sport: sport.name,
       outcomeName: data.outcomeName,
-      targetOdds: data.targetOdds,
+      targetOdds: decimalTargetOdds, // Store as decimal
       operator: data.operator,
     };
 
     onAddAlert(newAlert);
     toast({ title: existingAlert ? "Alert Updated!" : "Alert Created!", description: `You'll be notified for ${event.name} - ${data.outcomeName}.` });
-    if (!existingAlert) form.reset();
+    if (!existingAlert) {
+        form.reset({
+            sportId: '',
+            eventId: '',
+            outcomeName: '',
+            targetOdds: '+100',
+            operator: '>=',
+        });
+    }
     setIsLoading(false);
   };
 
@@ -113,7 +137,7 @@ export function AlertForm({ onAddAlert, existingAlert }: AlertFormProps) {
     <Card className="shadow-lg w-full max-w-lg mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><BellPlus className="text-primary h-6 w-6" />{existingAlert ? 'Edit Alert' : 'Create Odds Alert'}</CardTitle>
-        <CardDescription>Get notified when odds reach your desired target.</CardDescription>
+        <CardDescription>Get notified when odds (American format) reach your desired target.</CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -203,9 +227,9 @@ export function AlertForm({ onAddAlert, existingAlert }: AlertFormProps) {
                 name="targetOdds"
                 render={({ field }) => (
                   <FormItem className="flex-grow">
-                    <FormLabel>Target Odds</FormLabel>
+                    <FormLabel>Target Odds (American)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="e.g., 2.5" {...field} />
+                      <Input type="text" placeholder="e.g., +150 or -200" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

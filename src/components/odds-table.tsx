@@ -18,7 +18,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from '@/components/ui/input';
 import { format, parseISO } from 'date-fns';
-import { Award, Filter, CalendarDays, ShieldCheck } from 'lucide-react';
+import { Award, Filter, CalendarDays } from 'lucide-react';
+import { decimalToAmerican } from '@/lib/utils';
 
 interface OddsTableProps {
   initialEvents?: EventData[];
@@ -54,7 +55,6 @@ export function OddsTable({
     }
 
     if (selectedMarket !== 'all') {
-      // Find market name by ID, then filter events by market name
       const marketObj = markets.find(m => m.id === selectedMarket);
       if (marketObj) {
         events = events.filter(event => event.market === marketObj.name);
@@ -185,7 +185,7 @@ export function OddsTable({
                                   variant={isBest ? 'default' : 'secondary'}
                                   className={isBest ? 'bg-accent text-accent-foreground font-bold' : ''}
                                 >
-                                  {oddDetail.odds.toFixed(2)}
+                                  {decimalToAmerican(oddDetail.odds)}
                                 </Badge>
                               ) : (
                                 '-'
@@ -197,7 +197,7 @@ export function OddsTable({
                           {bestOddDetail ? (
                             <div className="flex flex-col items-center">
                               <Badge className="bg-accent text-accent-foreground">
-                                {bestOddDetail.odds.toFixed(2)}
+                                {decimalToAmerican(bestOddDetail.odds)}
                               </Badge>
                               <span className="text-xs text-muted-foreground mt-1">
                                 {bestOddDetail.bookmaker}
