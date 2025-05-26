@@ -25,11 +25,6 @@ export const siteConfig: SiteConfig = {
       icon: LayoutDashboard,
     },
     {
-      title: "AI Assistant",
-      href: "/ai-assistant",
-      icon: Bot,
-    },
-    {
       title: "Alerts",
       href: "/alerts",
       icon: BellRing,
